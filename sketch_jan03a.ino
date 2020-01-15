@@ -5,7 +5,7 @@
 
 SoftwareSerial moduloGSM(10, 11);
 
-String server_url = "http://189.69.229.230:3333/test";
+String server_url = "http://189.69.229.230:3333/positions";
 String serial = "1";
 String model = "\"Moto\"";
 
