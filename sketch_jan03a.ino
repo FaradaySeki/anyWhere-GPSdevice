@@ -5,15 +5,9 @@
 
 SoftwareSerial moduloGSM(10, 11);
 
-//String server_url = "http://189.69.229.230:3333/test";
-String server_url = "";
+String server_url = "http://189.69.229.230:3333/test";
 String serial = "1";
 String model = "\"Moto\"";
-String cliente = "953884989";
-
-// como sempre vou armazenar 15 bytes (ip adress v4), fixei o mapeamento da memoria EEPROM
-int adress = 0;
-int finalAdress = 15;
 
 String latitude;
 String longitude;
@@ -34,38 +28,18 @@ void Atribui_LATLONG(String data);
 void Start();
 void syncGPS();
 void syncGSM();
-void EEPROMWriteStr(int address, String value);
-String EEPROMReadStr(int address);
-String readIp();
-void enviarSMS(String telefone, String mensagem);
-String requestIp(String msg);
-String validateIp(String str);
-void forceIP();
-void flushRX();
 
 void setup()
 {
   Serial.begin(9600);
   while (!Serial)
     ;
+
   moduloGSM.begin(9600);
   pinMode(5, OUTPUT);
   pinMode(3, OUTPUT);
 
   Start();
-
-  // Configuração do timer1
-
-  TCCR1A = 0;                          //confira timer para operação normal pinos OC1A e OC1B desconectados
-  TCCR1B = 0;                          //limpa registrador
-  TCCR1B |= (1 << CS10) | (1 << CS12); // configura prescaler para 1024: CS12 = 1 e CS10 = 1
-
-  TCNT1 = 0xC2F7; // incia timer com valor para que estouro ocorra em 1 segundo
-  // 65536-(16MHz/1024/1Hz) = 49911 = 0xC2F7
-
-  TIMSK1 |= (1 << TOIE1);
-
-  forceIP();
 }
 
 void loop()
@@ -78,111 +52,6 @@ void loop()
   HTTP_Init("Tim Connect", "tim", "tim");
 
   HTTP_Post(server_url, json);
-}
-
-///**** Interrupção do TIMER1 a cada 1 seg ***/////
-ISR(TIMER1_OVF_vect)
-{
-  TCNT1 = 0xC2F7;
-  seconds++;
-  if (seconds > 21600)
-  {
-    Serial.println("6 Horas !");
-    EEPROMWriteStr(0, "estouatualizand");
-    forceIP();
-    seconds = 0;
-  }
-}
-void forceIP()
-{
-  String IP = readIp();
-
-  if (IP == "WRONG IP")
-  {
-    requestIp("Favor apontar o IP do servidor !");
-  }
-  else
-    server_url = "http://" + IP + ":3333/positions";
-}
-///
-String requestIp(String msg)
-{
-  enviarSMS(cliente, msg);
-  while (true)
-  {
-    if (moduloGSM.available() > 0)
-    {
-      String SMS = moduloGSM.readString();
-      flushRX();
-      SMS.trim();
-      SMS.toUpperCase();
-
-      String numero = SMS.substring(10, 19);
-      String MSG = SMS.substring(48);
-      String IP = validateIp(MSG);
-
-      if (SMS.indexOf("+CMT") == -1 || numero != cliente || IP == "WRONG IP")
-      {
-        enviarSMS(cliente, "Parece que recebi um dado na serial que ñ foi tua mensagem ou está incorreto");
-      }
-      else if (SMS == "ERROR")
-      {
-        Comando_AT("CFUN=0");
-        syncGSM();
-      }
-      else
-      {
-        EEPROMWriteStr(adress, IP);
-        break;
-      }
-    }
-  }
-}
-void flushRX()
-{
-  while (moduloGSM.available())
-    moduloGSM.read();
-}
-// TESTA SE REALMENTE TEM UM IP ADRESS ESCRITO NA EEPROM ENTRE AS POSIÇOES 0 A 14
-void enviarSMS(String telefone, String mensagem)
-{
-  moduloGSM.println("AT+CMGS=\"" + telefone + "\""); // comando necessario para enviar SMS
-  moduloGSM.print(mensagem);                         // Após \n escrevemos a mensagem
-  moduloGSM.print((char)26);
-  flushRX();
-}
-String readIp()
-{
-  String str = EEPROMReadStr(adress);
-  return validateIp(str);
-}
-
-String validateIp(String str)
-{
-  int points;
-  int index = str.indexOf('.');
-  if (index == -1)
-    return "WRONG IP";
-  else
-  {
-    String sub = "";
-    points++;
-    for (int cont = 0; cont < str.length(); cont++)
-    {
-      if (cont == 0)
-        sub = str.substring(index + 1); //inicio é inclusivo, logo descartando o '.';
-      else
-        sub = sub.substring(index + 1);
-
-      index = sub.indexOf('.');
-      if (index != -1)
-        points++;
-    }
-    if (points == 3)
-      return str;
-    else
-      return "WRONG IP";
-  }
 }
 
 void Start()
@@ -449,34 +318,4 @@ void HTTP_Close()
   }
   //  Comando_AT("SAPBR=0,1");
   //  delay(200);
-}
-
-// MANIPULAÇÃO DA EEPROM
-void EEPROMWriteStr(int initAddress, String value)
-{
-  String msg = "Escrevendo.";
-  Serial.print(msg);
-  for (int index = 0; index < value.length(); index++)
-  {
-    Serial.print(".");
-    EEPROM.update(initAddress + index, value.charAt(index));
-    if (index >= 1000)
-      break;
-  }
-}
-String EEPROMReadStr(int readAddress)
-{
-  String readStr = "";
-  char readByte;
-  //int readAddress = address;
-
-  do
-  {
-    readByte = EEPROM.read(readAddress); // retorna Byte lido na posição de memoria
-    readStr += readByte;                 // concatena o caracter lido na String readStr(vetor de caracteres)
-    readAddress++;                       // proxima posição a ser lida
-  }                                      //while ( (readByte != (char)0) && (readAddress < (address + 1000)) );  condição original
-  while (readAddress < 16);
-
-  return readStr;
 }
