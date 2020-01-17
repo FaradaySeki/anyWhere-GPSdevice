@@ -268,17 +268,7 @@ void HTTP_Post(String URL, String DATA) // EXECUTA OS COMANDOS PARA REALIZAR UM 
       Serial.println(data_gsm);
       data_gsm.trim();
 
-      String MSG = data_gsm.substring(48);
-      String IP = validateIp(MSG);
-
-      if (IP.length() == 15)
-      {
-        EEPROMWriteStr(adress, IP);
-
-        HTTP_Close();
-        flag = false;
-      }
-      else if (data_gsm.indexOf("HTTPACTION: 1,200") != -1)
+      if (data_gsm.indexOf("HTTPACTION: 1,200") != -1)
       { // 0 pra testar resposta do metodo GET
         String res = Comando_AT("HTTPREAD");
 
