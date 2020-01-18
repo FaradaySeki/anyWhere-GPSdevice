@@ -38,6 +38,8 @@ void setup()
   moduloGSM.begin(9600);
   pinMode(5, OUTPUT);
   pinMode(3, OUTPUT);
+  
+  digitalWrite(3,LOW);
 
   Start();
 }
@@ -278,7 +280,7 @@ void HTTP_Post(String URL, String DATA) // EXECUTA OS COMANDOS PARA REALIZAR UM 
 
         flag = false;
       } // SE HOUVE ALGUM DESSES HTTP CODE STATUS
-      else if (data_gsm.indexOf("+HTTPACTION: 1,601,0") != -1 || data_gsm.indexOf("+HTTPACTION: 1,408,0") != -1 || data_gsm.indexOf("+HTTPACTION: 1,604,0") != -1)
+      else if (data_gsm.indexOf("+HTTPACTION: 1,400") != -1 || data_gsm.indexOf("+HTTPACTION: 1,601,0") != -1 || data_gsm.indexOf("+HTTPACTION: 1,408,0") != -1 || data_gsm.indexOf("+HTTPACTION: 1,604,0") != -1)
       {
         HTTP_Close();
         flag = false;
