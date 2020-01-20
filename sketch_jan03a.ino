@@ -285,7 +285,7 @@ void HTTP_Post(String URL, String DATA) // EXECUTA OS COMANDOS PARA REALIZAR UM 
         HTTP_Close();
         flag = false;
       } // SE NÃO TRAVOU E DEPOIS DE UM TEMPO OCIOSO O GSM RENICIALIZA E DISPARA A FLAG DEACT E SAIMOS DO LOOP
-      else if (data_gsm.indexOf("DEACT") != -1)
+      else if (data_gsm.indexOf("DEACT") != -1 || data_gsm.indexOf("ERROR") != -1)
       {
         Comando_AT("HTTPTERM");
         flag = false;
